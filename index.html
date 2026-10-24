@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistic ATM Machine Interface - Oasis Infobyte Project</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for Digital ATM Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom Styling for Photorealistic Metallic Frame & Digital CRT Glow */
+        body {
+            background: radial-gradient(circle at center, #1b2838 0%, #0d121d 100%);
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+
+        .font-mono-digital {
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Metallic Frame Texture & Depth */
+        .atm-chassis {
+            background: linear-gradient(145deg, #3a4146, #1e2226);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 
+                        inset 0 2px 4px rgba(255, 255, 255, 0.2), 
+                        inset 0 -2px 4px rgba(0, 0, 0, 0.8);
+            border: 1px solid #4a5157;
+        }
+
+        .atm-bezel {
+            background: linear-gradient(180deg, #151a21 0%, #222933 100%);
+            border: 12px solid #2d3540;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+        }
+
+        /* ATM Screen Glow & Line Texture */
+        .atm-screen {
+            background: #021814;
+            color: #00ffcc;
+            box-shadow: inset 0 0 20px rgba(0, 255, 204, 0.15), 0 0 10px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .atm-screen::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* Keypad Metallic Tactile Buttons */
+        .keypad-btn {
+            background: linear-gradient(145deg, #444c56, #2a2e35);
+            box-shadow: 0 4px 0 #181b1f, 0 5px 10px rgba(0,0,0,0.5);
+            transition: all 0.08s ease;
+            color: #e2e8f0;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .keypad-btn:active, .keypad-btn.pressed {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #181b1f, inset 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .keypad-btn-cancel {
+            background: linear-gradient(145deg, #b91c1c, #7f1d1d);
+            box-shadow: 0 4px 0 #450a0a;
+        }
+
+        .keypad-btn-clear {
+            background: linear-gradient(145deg, #d97706, #92400e);
+            box-shadow: 0 4px 0 #451a03;
+        }
+
+        .keypad-btn-enter {
+            background: linear-gradient(145deg, #15803d, #14532d);
+            box-shadow: 0 4px 0 #052e16;
+        }
+
+        /* Glowing LED Slot Indicators */
+        .led-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .led-green {
+            background-color: #10b981;
+            box-shadow: 0 0 10px #10b981, 0 0 20px #10b981;
+        }
+
+        .led-off {
+            background-color: #374151;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .led-blue {
+            background-color: #3b82f6;
+            box-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6;
+        }
+
+        /* Card Slot Animation */
+        .card-graphic {
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-inserted {
+            transform: translateY(-80px) scale(0.85);
+            opacity: 0.2;
+        }
+
+        /* Cash Dispenser Animation */
+        @keyframes dispenseCash {
+            0% { transform: translateY(-100%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .animate-cash {
+            animation: dispenseCash 1.2s forwards ease-out;
+        }
+
+        /* Receipt Sliding Out */
+        @keyframes printReceipt {
+            0% { max-height: 0; opacity: 0; }
+            100% { max-height: 350px; opacity: 1; }
+        }
+
+        .animate-receipt {
+            animation: printReceipt 1.5s forwards ease-in-out;
+        }
+
+        /* Custom Scrollbar for Screen & Receipt */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00ffcc;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-2 sm:p-6">
+
+    <!-- MAIN ATM MACHINE CONTAINER -->
+    <div class="atm-chassis w-full max-w-5xl rounded-2xl p-4 sm:p-8 relative">
+        
+        <!-- Header Branding & Speaker Grille -->
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-gray-900 font-bold text-xl shadow-lg">
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron text-xl sm:text-2xl font-black tracking-wider text-gray-200">FIRST NATIONAL BANK</h1>
+                    <p class="text-xs text-emerald-400 font-mono tracking-widest uppercase">24/7 Secure Automated Teller</p>
+                </div>
+            </div>
+
+            <!-- Speaker Slots -->
+            <div class="hidden sm:flex space-x-1">
+                <div class="w-1.5 h-8 bg-gray-800 rounded-full border-r border-gray-600"></div>
+                <div class="w-1.5 h-8 bg-gray-800 rounded-full border-r border-gray-600"></div>
+                <div class="w-1.5 h-8 bg-gray-800 rounded-full border-r border-gray-600"></div>
+                <div class="w-1.5 h-8 bg-gray-800 rounded-full border-r border-gray-600"></div>
+                <div class="w-1.5 h-8 bg-gray-800 rounded-full border-r border-gray-600"></div>
+            </div>
+        </div>
+
+        <!-- MAIN LAYOUT: Screen & Controls Side-by-Side on Desktop -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT/TOP: ATM DIGITAL SCREEN (8 Cols) -->
+            <div class="lg:col-span-7 flex flex-col">
+                <div class="atm-bezel rounded-xl p-3 sm:p-5 flex-1 flex flex-col justify-between">
+                    
+                    <!-- Screen Header Bar -->
+                    <div class="flex justify-between items-center border-b border-emerald-900/60 pb-2 text-xs font-mono-digital text-emerald-400">
+                        <span id="screen-terminal-id"><i class="fa-solid fa-network-wired mr-1"></i> ATM #OIB-8092</span>
+                        <span id="screen-clock">00:00:00 PM</span>
+                    </div>
+
+                    <!-- SCREEN DISPLAY AREA -->
+                    <div id="atm-screen-content" class="atm-screen rounded-lg p-4 sm:p-6 my-3 min-h-[320px] flex flex-col justify-between relative">
+                        
+                        <!-- Screen Contents are dynamically injected via JS -->
+                        
+                    </div>
+
+                    <!-- Screen Footer Bar -->
+                    <div class="flex justify-between items-center pt-2 border-t border-emerald-900/60 text-[10px] sm:text-xs font-mono-digital text-emerald-500/80">
+                        <span><i class="fa-solid fa-shield-halved"></i> 256-BIT ENCRYPTED SESSION</span>
+                        <span id="screen-status-msg">READY FOR CARD</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RIGHT/BOTTOM: SLOTS & HARDWARE INTERFACE (5 Cols) -->
+            <div class="lg:col-span-5 flex flex-col justify-between space-y-6">
+
+                <!-- CARD SLOT & RECEIPT PRINTER SECTION -->
+                <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700 shadow-inner flex justify-between gap-4">
+                    
+                    <!-- CARD SLOT CONTAINER -->
+                    <div class="flex-1 flex flex-col items-center">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Card Reader</span>
+                            <span id="led-card" class="led-indicator led-green"></span>
+                        </div>
+                        
+                        <!-- Physical Slot Graphic -->
+                        <div class="w-full bg-gray-900 h-10 rounded-md border-2 border-gray-600 flex items-center justify-center relative overflow-visible shadow-inner">
+                            <div class="w-20 h-2 bg-emerald-500/30 rounded-full blur-[2px]"></div>
+                            
+                            <!-- Inserted Debit Card Graphic -->
+                            <div id="physical-card" class="card-graphic absolute bottom-0 w-28 h-16 bg-gradient-to-r from-blue-700 to-indigo-900 rounded-lg border border-blue-400 p-1.5 text-white text-[8px] flex flex-col justify-between shadow-2xl cursor-pointer hover:brightness-110" onclick="toggleCardInsertion()">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold tracking-widest text-[9px]">OIB BANK</span>
+                                    <i class="fa-solid fa-wifi text-[8px]"></i>
+                                </div>
+                                <div class="w-5 h-3 bg-yellow-500 rounded-sm my-0.5 border border-yellow-300"></div>
+                                <div class="font-mono text-[8px]">•••• 8829</div>
+                            </div>
+                        </div>
+
+                        <button onclick="toggleCardInsertion()" id="card-btn" class="mt-3 w-full py-1.5 text-xs font-semibold rounded bg-emerald-600 hover:bg-emerald-500 text-white transition shadow">
+                            <i class="fa-solid fa-credit-card mr-1"></i> Insert Card
+                        </button>
+                    </div>
+
+                    <!-- RECEIPT SLOT CONTAINER -->
+                    <div class="flex-1 flex flex-col items-center relative">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Receipt</span>
+                            <span id="led-receipt" class="led-indicator led-off"></span>
+                        </div>
+                        <div class="w-full bg-gray-900 h-10 rounded-md border-2 border-gray-600 flex items-center justify-center shadow-inner relative">
+                            <div class="w-24 h-1.5 bg-black rounded-full"></div>
+                        </div>
+
+                        <!-- POPUP PRINTED RECEIPT -->
+                        <div id="receipt-paper" class="hidden absolute top-14 z-30 w-full bg-slate-50 text-gray-800 p-3 rounded-b-md shadow-2xl border border-gray-300 text-[10px] font-mono leading-tight animate-receipt">
+                            <div class="text-center border-b border-gray-400 pb-1 mb-1 font-bold">
+                                --- FIRST NATIONAL BANK ---<br>
+                                ATM TRANSACTION RECEIPT
+                            </div>
+                            <div id="receipt-details">
+                                <!-- Dynamic Receipt Lines -->
+                            </div>
+                            <div class="text-center border-t border-gray-400 pt-1 mt-1 text-[8px] text-gray-500">
+                                Thank you for banking with us!
+                            </div>
+                            <button onclick="takeReceipt()" class="mt-2 w-full bg-gray-800 text-white text-[9px] py-1 rounded hover:bg-gray-700">Take Receipt</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- NUMERIC PIN PAD KEYPAD -->
+                <div class="bg-gray-900/90 rounded-xl p-4 border border-gray-700 shadow-2xl flex flex-col items-center">
+                    <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-3 flex items-center space-x-2">
+                        <i class="fa-solid fa-lock text-yellow-500"></i>
+                        <span>PCI-DSS Compliant PIN Pad</span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2.5 w-full max-w-xs">
+                        <!-- Row 1 -->
+                        <button onclick="pressKey('1')" class="keypad-btn py-3 rounded-lg text-lg font-bold">1</button>
+                        <button onclick="pressKey('2')" class="keypad-btn py-3 rounded-lg text-lg font-bold">2</button>
+                        <button onclick="pressKey('3')" class="keypad-btn py-3 rounded-lg text-lg font-bold">3</button>
+                        <button onclick="pressKey('CANCEL')" class="keypad-btn keypad-btn-cancel py-3 rounded-lg text-xs font-bold text-white flex flex-col items-center justify-center">
+                            <span>CANCEL</span>
+                        </button>
+
+                        <!-- Row 2 -->
+                        <button onclick="pressKey('4')" class="keypad-btn py-3 rounded-lg text-lg font-bold">4</button>
+                        <button onclick="pressKey('5')" class="keypad-btn py-3 rounded-lg text-lg font-bold">5</button>
+                        <button onclick="pressKey('6')" class="keypad-btn py-3 rounded-lg text-lg font-bold">6</button>
+                        <button onclick="pressKey('CLEAR')" class="keypad-btn keypad-btn-clear py-3 rounded-lg text-xs font-bold text-white flex flex-col items-center justify-center">
+                            <span>CLEAR</span>
+                        </button>
+
+                        <!-- Row 3 -->
+                        <button onclick="pressKey('7')" class="keypad-btn py-3 rounded-lg text-lg font-bold">7</button>
+                        <button onclick="pressKey('8')" class="keypad-btn py-3 rounded-lg text-lg font-bold">8</button>
+                        <button onclick="pressKey('9')" class="keypad-btn py-3 rounded-lg text-lg font-bold">9</button>
+                        <button onclick="pressKey('ENTER')" class="keypad-btn keypad-btn-enter py-3 rounded-lg text-xs font-bold text-white flex flex-col items-center justify-center">
+                            <span>ENTER</span>
+                        </button>
+
+                        <!-- Row 4 -->
+                        <button onclick="pressKey('.')" class="keypad-btn py-3 rounded-lg text-lg font-bold">•</button>
+                        <button onclick="pressKey('0')" class="keypad-btn py-3 rounded-lg text-lg font-bold">0</button>
+                        <button onclick="pressKey('00')" class="keypad-btn py-3 rounded-lg text-sm font-bold">00</button>
+                        <div class="bg-gray-800 rounded-lg flex items-center justify-center text-gray-600 border border-gray-700">
+                            <i class="fa-solid fa-shield text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CASH DISPENSER & DEPOSIT SLOT -->
+                <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700 shadow-inner">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Cash Dispenser / Deposit Slot</span>
+                        <span id="led-cash" class="led-indicator led-off"></span>
+                    </div>
+
+                    <!-- Dispenser Slot Tray -->
+                    <div class="w-full bg-gray-950 h-16 rounded-lg border-2 border-gray-700 relative flex items-center justify-center overflow-hidden shadow-inner">
+                        <div class="w-full h-1 bg-gray-800 absolute top-1"></div>
+                        
+                        <!-- Animated Cash Bills Output -->
+                        <div id="cash-tray" class="hidden absolute flex items-center justify-center space-x-[-40px] z-20 cursor-pointer transform hover:scale-105 transition" onclick="collectCash()">
+                            <div class="w-32 h-14 bg-emerald-700 rounded border-2 border-emerald-300 shadow-xl flex items-center justify-between p-2 text-emerald-100 font-bold text-xs transform -rotate-3">
+                                <span>$100</span>
+                                <i class="fa-solid fa-money-bill-wave text-lg"></i>
+                                <span>$100</span>
+                            </div>
+                            <div class="w-32 h-14 bg-emerald-600 rounded border-2 border-emerald-200 shadow-xl flex items-center justify-between p-2 text-emerald-100 font-bold text-xs transform rotate-2">
+                                <span>CASH</span>
+                                <i class="fa-solid fa-building-columns text-base"></i>
+                                <span>CASH</span>
+                            </div>
+                        </div>
+
+                        <span id="cash-slot-label" class="text-[11px] text-gray-500 font-mono tracking-widest uppercase">DISPENSER SEALED</span>
+                    </div>
+
+                    <!-- Collect Cash Prompt Button -->
+                    <button id="collect-cash-btn" onclick="collectCash()" class="hidden mt-2 w-full py-1.5 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold text-xs rounded transition shadow animate-pulse">
+                        <i class="fa-solid fa-hand-holding-dollar mr-1"></i> Take Cash from Slot
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO SYNTHESIZER (WEB AUDIO API) -->
+    <script>
+        // Web Audio API Sound Generator (No external audio files required)
+        class ATMAudio {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // Beep for keypad input
+            playBeep(freq = 800, type = 'sine', duration = 0.08) {
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            // Cash counting/dispensing motor sound effect
+            playCashSound() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                let count = 0;
+                const interval = setInterval(() => {
+                    this.playBeep(180 + Math.random() * 60, 'sawtooth', 0.05);
+                    count++;
+                    if (count > 12) clearInterval(interval);
+                }, 70);
+            }
+
+            // Success chime
+            playSuccess() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.1, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+
+            // Error sound
+            playError() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                this.playBeep(150, 'square', 0.25);
+            }
+        }
+
+        const atmAudio = new ATMAudio();
+    </script>
+
+    <!-- ATM LOGIC ENGINE -->
+    <script>
+        // ACCOUNT STATE & DATA
+        const ATM_DATA = {
+            cardInserted: false,
+            authenticated: false,
+            pin: "1234",
+            pinInput: "",
+            inputBuffer: "",
+            balance: 2450.75,
+            accountNumber: "4820-9912-3456",
+            holderName: "SHASHANK YADAV",
+            screenState: "WELCOME", // WELCOME, PIN_ENTRY, MENU, BALANCE, WITHDRAW, DEPOSIT, TRANSFER, PIN_CHANGE, STATEMENT, PROCESSING, SUCCESS
+            history: [
+                { date: '2026-10-22 10:14', type: 'Deposit', amount: 500.00, balance: 2450.75 },
+                { date: '2026-10-20 14:30', type: 'Withdrawal', amount: 100.00, balance: 1950.75 },
+                { date: '2026-10-18 09:12', type: 'Fast Cash', amount: 50.00, balance: 2050.75 }
+            ],
+            lastTransaction: null,
+            transferAccount: "",
+            transferStep: "ACCOUNT" // ACCOUNT or AMOUNT
+        };
+
+        // Real-Time Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('screen-clock').innerText = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // RENDER SCREEN BASED ON CURRENT STATE
+        function renderScreen() {
+            const screen = document.getElementById('atm-screen-content');
+            const statusMsg = document.getElementById('screen-status-msg');
+
+            switch (ATM_DATA.screenState) {
+
+                case "WELCOME":
+                    statusMsg.innerText = "WAITING FOR CARD";
+                    screen.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center space-y-4 my-auto">
+                            <i class="fa-solid fa-credit-card text-5xl text-emerald-400 animate-bounce"></i>
+                            <h2 class="text-xl font-orbitron font-bold text-white tracking-widest">WELCOME TO FIRST NATIONAL</h2>
+                            <p class="text-xs font-mono-digital text-emerald-300">PLEASE INSERT YOUR DEBIT CARD TO BEGIN</p>
+                            <div class="text-[10px] text-gray-400 border border-emerald-900/80 px-3 py-1 rounded-full">
+                                Demo PIN: <span class="text-emerald-400 font-bold">1234</span>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case "PIN_ENTRY":
+                    statusMsg.innerText = "AUTHENTICATION REQUIRED";
+                    const masked = "• ".repeat(ATM_DATA.pinInput.length);
+                    screen.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center space-y-4 my-auto">
+                            <h2 class="text-sm font-orbitron text-emerald-300">ENTER YOUR 4-DIGIT PIN</h2>
+                            <div class="w-48 h-12 bg-black/60 border-2 border-emerald-500 rounded-lg flex items-center justify-center text-2xl font-bold tracking-widest text-emerald-400 font-mono shadow-inner">
+                                ${masked || '<span class="text-emerald-800 animate-pulse">_ _ _ _</span>'}
+                            </div>
+                            <p class="text-[11px] text-gray-400 font-mono">Use physical keyboard or on-screen keypad.<br>Press <span class="text-green-400 font-bold">ENTER</span> when done.</p>
+                        </div>
+                    `;
+                    break;
+
+                case "MENU":
+                    statusMsg.innerText = "MAIN MENU";
+                    screen.innerHTML = `
+                        <div class="h-full flex flex-col justify-between">
+                            <div class="text-center pb-2 border-b border-emerald-900/50">
+                                <span class="text-xs text-gray-300 font-mono">WELCOME, <strong class="text-emerald-400">${ATM_DATA.holderName}</strong></span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 my-2 text-xs font-mono-digital">
+                                <button onclick="selectMenuOption('BALANCE')" class="bg-emerald-950/80 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-200 p-2.5 rounded-lg text-left flex items-center space-x-2 transition">
+                                    <i class="fa-solid fa-wallet text-emerald-400"></i>
+                                    <span>1. Balance Inquiry</span>
+                                </button>
+                                <button onclick="selectMenuOption('WITHDRAW')" class="bg-emerald-950/80 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-200 p-2.5 rounded-lg text-left flex items-center space-x-2 transition">
+                                    <i class="fa-solid fa-money-bill-transfer text-emerald-400"></i>
+                                    <span>2. Cash Withdrawal</span>
+                                </button>
+                                <button onclick="selectMenuOption('DEPOSIT')" class="bg-emerald-950/80 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-200 p-2.5 rounded-lg text-left flex items-center space-x-2 transition">
+                                    <i class="fa-solid fa-piggy-bank text-emerald-400"></i>
+                                    <span>3. Deposit Cash</span>
+                                </button>
+                                <button onclick="selectMenuOption('TRANSFER')" class="bg-emerald-950/80 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-200 p-2.5 rounded-lg text-left flex items-center space-x-2 transition">
+                                    <i class="fa-solid fa-paper-plane text-emerald-400"></i>
+                                    <span>4. Fund Transfer</span>
+                                </button>
+                                <button onclick="selectMenuOption('STATEMENT')" class="bg-emerald-950/80 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-200 p-2.5 rounded-lg text-left flex items-center space-x-2 transition">
+                                    <i class="fa-solid fa-list-ol text-emerald-400"></i>
+                                    <span>5. Mini Statement</span>
+                                </button>
+                                <button onclick="selectMenuOption('PIN_CHANGE')" class="bg-emerald-950/80 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-200 p-2.5 rounded-lg text-left flex items-center space-x-2 transition">
+                                    <i class="fa-solid fa-key text-emerald-400"></i>
+                                    <span>6. Change PIN</span>
+                                </button>
+                            </div>
+
+                            <div class="text-center pt-1 border-t border-emerald-900/50">
+                                <button onclick="ejectCard()" class="text-xs bg-red-950/80 border border-red-600/60 text-red-300 px-4 py-1 rounded hover:bg-red-900">
+                                    <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Exit & Eject Card
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case "BALANCE":
+                    statusMsg.innerText = "ACCOUNT BALANCE";
+                    screen.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center space-y-4 my-auto">
+                            <h3 class="text-xs font-mono text-gray-300">PRIMARY SAVINGS ACCOUNT</h3>
+                            <p class="text-xs text-emerald-500 font-mono">${ATM_DATA.accountNumber}</p>
+                            
+                            <div class="bg-black/60 border border-emerald-500/50 p-4 rounded-xl w-full max-w-xs shadow-inner">
+                                <span class="text-[10px] text-gray-400 uppercase tracking-widest block">Available Balance</span>
+                                <span class="text-3xl font-bold font-mono text-emerald-400">$${ATM_DATA.balance.toFixed(2)}</span>
+                            </div>
+
+                            <div class="flex space-x-3 pt-2">
+                                <button onclick="printCurrentBalanceReceipt()" class="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-xs font-mono">
+                                    <i class="fa-solid fa-print mr-1"></i> Print Receipt
+                                </button>
+                                <button onclick="setScreenState('MENU')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-emerald-300 rounded text-xs font-mono">
+                                    <i class="fa-solid fa-arrow-left mr-1"></i> Back to Menu
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case "WITHDRAW":
+                    statusMsg.innerText = "SELECT WITHDRAWAL AMOUNT";
+                    screen.innerHTML = `
+                        <div class="h-full flex flex-col justify-between">
+                            <div class="text-center">
+                                <h3 class="text-sm font-orbitron text-emerald-300">SELECT WITHDRAWAL AMOUNT</h3>
+                                <p class="text-[11px] text-gray-400 font-mono">Available: $${ATM_DATA.balance.toFixed(2)}</p>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2 font-mono text-xs my-2">
+                                <button onclick="processWithdrawal(20)" class="bg-emerald-950 hover:bg-emerald-800 border border-emerald-500/40 p-2.5 rounded text-center text-emerald-200">$20</button>
+                                <button onclick="processWithdrawal(50)" class="bg-emerald-950 hover:bg-emerald-800 border border-emerald-500/40 p-2.5 rounded text-center text-emerald-200">$50</button>
+                                <button onclick="processWithdrawal(100)" class="bg-emerald-950 hover:bg-emerald-800 border border-emerald-500/40 p-2.5 rounded text-center text-emerald-200">$100</button>
+                                <button onclick="processWithdrawal(200)" class="bg-emerald-950 hover:bg-emerald-800 border border-emerald-500/40 p-2.5 rounded text-center text-emerald-200">$200</button>
+                                <button onclick="processWithdrawal(500)" class="bg-emerald-950 hover:bg-emerald-800 border border-emerald-500/40 p-2.5 rounded text-center text-emerald-200">$500</button>
+                                <button onclick="promptCustomWithdrawal()" class="bg-emerald-900 hover:bg-emerald-700 border border-emerald-400 p-2.5 rounded text-center text-white font-bold">Custom</button>
+                            </div>
+
+                            <div id="custom-withdraw-area" class="${ATM_DATA.inputMode === 'WITHDRAW_CUSTOM' ? '' : 'hidden'} bg-black/50 p-2 rounded border border-emerald-600 flex items-center justify-between">
+                                <span class="text-xs text-gray-300">Custom ($):</span>
+                                <span class="text-lg font-mono font-bold text-emerald-400">${ATM_DATA.inputBuffer || '0'}</span>
+                                <button onclick="processWithdrawal(parseFloat(ATM_DATA.inputBuffer))" class="bg-emerald-600 text-white text-xs px-3 py-1 rounded">OK</button>
+                            </div>
+
+                            <div class="text-center pt-1">
+                                <button onclick="setScreenState('MENU')" class="text-xs bg-gray-800 text-gray-300 px-4 py-1 rounded hover:bg-gray-700">
+                                    <i class="fa-solid fa-arrow-left mr-1"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case "DEPOSIT":
+                    statusMsg.innerText = "CASH DEPOSIT";
+                    screen.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center space-y-3 my-auto">
+                            <h3 class="text-sm font-orbitron text-emerald-300">ENTER DEPOSIT AMOUNT</h3>
+                            <p class="text-[11px] text-gray-400 font-mono">Insert cash notes into dispenser slot or enter value below:</p>
+
+                            <div class="w-48 h-10 bg-black/60 border-2 border-emerald-500 rounded-lg flex items-center justify-center text-xl font-bold text-emerald-400 font-mono shadow-inner">
+                                $${ATM_DATA.inputBuffer || '0'}
+                            </div>
+
+                            <div class="flex space-x-2 pt-2">
+                                <button onclick="confirmDeposit()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-mono font-bold">
+                                    <i class="fa-solid fa-check mr-1"></i> Confirm Deposit
+                                </button>
+                                <button onclick="setScreenState('MENU')" class="px-3 py-1.5 bg-gray-800 text-gray-300 rounded text-xs font-mono">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case "TRANSFER":
+                    statusMsg.innerText = "FUND TRANSFER";
+                    screen.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center space-y-3 my-auto">
+                            <h3 class="text-sm font-orbitron text-emerald-300">
+                                ${ATM_DATA.transferStep === 'ACCOUNT' ? 'ENTER RECIPIENT ACCOUNT #' : 'ENTER TRANSFER AMOUNT'}
+                            </h3>
+
+                            ${ATM_DATA.transferStep === 'AMOUNT' ? `<p class="text-[10px] text-emerald-400 font-mono">Recipient: ${ATM_DATA.transferAccount}</p>` : ''}
+
+                            <div class="w-56 h-10 bg-black/60 border-2 border-emerald-500 rounded-lg flex items-center justify-center text-lg font-bold text-emerald-400 font-mono shadow-inner">
+                                ${ATM_DATA.transferStep === 'ACCOUNT' ? (ATM_DATA.inputBuffer || 'XXXX-XXXX-XXXX') : ('$' + (ATM_DATA.inputBuffer || '0'))}
+                            </div>
+
+                            <div class="flex space-x-2 pt-2">
+                                <button onclick="confirmTransferStep()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-mono font-bold">
+                                    ${ATM_DATA.transferStep === 'ACCOUNT' ? 'Next' : 'Send Funds'}
+                                </button>
+                                <button onclick="setScreenState('MENU')" class="px-3 py-1.5 bg-gray-800 text-gray-300 rounded text-xs font-mono">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case "PIN_CHANGE":
+                    statusMsg.innerText = "CHANGE PIN";
+                    screen.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center space-y-3 my-auto">
+                            <h3 class="text-sm font-orbitron text-emerald-300">ENTER NEW 4-DIGIT PIN</h3>
+                            
+                            <div class="w-48 h-10 bg-black/60 border-2 border-emerald-500 rounded-lg flex items-center justify-center text-xl font-bold text-emerald-400 font-mono shadow-inner">
+                                ${"• ".repeat(ATM_DATA.inputBuffer.length) || '_ _ _ _'}
+                            </div>
+
+                            <div class="flex space-x-2 pt-2">
+                                <button onclick="confirmPinChange()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-mono font-bold">
+                                    Update PIN
+                                </button>
+                                <button onclick="setScreenState('MENU')" class="px-3 py-1.5 bg-gray-800 text-gray-300 rounded text-xs font-mono">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case "STATEMENT":
+                    statusMsg.innerText = "MINI STATEMENT";
+                    let historyRows = ATM_DATA.history.map(item => `
+                        <tr class="border-b border-emerald-900/40">
+                            <td class="py-1">${item.date.split(' ')[0]}</td>
+                            <td class="${item.type==='Deposit'?'text-emerald-400':'text-red-400'}">${item.type}</td>
+                            <td class="text-right">$${item.amount.toFixed(2)}</td>
+                        </tr>
+                    `).join('');
+
+                    screen.innerHTML = `
+                        <div class="h-full flex flex-col justify-between">
+                            <h3 class="text-xs font-orbitron text-emerald-300 text-center">RECENT TRANSACTIONS</h3>
+                            
+                            <div class="overflow-y-auto max-h-44 text-[10px] font-mono my-1">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="text-gray-400 border-b border-emerald-800">
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th class="text-right">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${historyRows}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="flex justify-between items-center pt-2 border-t border-emerald-900/50">
+                                <button onclick="printStatementReceipt()" class="px-3 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-xs font-mono">
+                                    <i class="fa-solid fa-print mr-1"></i> Print Statement
+                                </button>
+                                <button onclick="setScreenState('MENU')" class="px-3 py-1 bg-gray-800 text-emerald-300 rounded text-xs font-mono">
+                                    Back
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case "PROCESSING":
+                    statusMsg.innerText = "PROCESSING TRANSACTION";
+                    screen.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center space-y-4 my-auto">
+                            <i class="fa-solid fa-gear text-4xl text-emerald-400 animate-spin"></i>
+                            <h3 class="text-sm font-orbitron text-emerald-300">PLEASE WAIT...</h3>
+                            <p class="text-xs font-mono text-gray-400">Processing your request securely.</p>
+                        </div>
+                    `;
+                    break;
+
+                case "SUCCESS":
+                    statusMsg.innerText = "TRANSACTION COMPLETE";
+                    screen.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center space-y-3 my-auto">
+                            <i class="fa-solid fa-circle-check text-4xl text-emerald-400"></i>
+                            <h3 class="text-sm font-orbitron text-emerald-300">TRANSACTION SUCCESSFUL</h3>
+                            <p class="text-xs font-mono text-gray-300">${ATM_DATA.successMsg || 'Operation completed successfully.'}</p>
+                            
+                            <div class="flex space-x-3 pt-2">
+                                <button onclick="setScreenState('MENU')" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-mono">
+                                    Another Transaction
+                                </button>
+                                <button onclick="ejectCard()" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs font-mono">
+                                    Eject Card
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        // PHYSICAL CARD INSERTION TOGGLE
+        function toggleCardInsertion() {
+            const cardEl = document.getElementById('physical-card');
+            const cardBtn = document.getElementById('card-btn');
+            const ledCard = document.getElementById('led-card');
+
+            if (!ATM_DATA.cardInserted) {
+                // Insert Card
+                ATM_DATA.cardInserted = true;
+                cardEl.classList.add('card-inserted');
+                cardBtn.innerText = "Eject Card";
+                cardBtn.classList.replace('bg-emerald-600', 'bg-red-600');
+                ledCard.classList.replace('led-green', 'led-blue');
+                atmAudio.playBeep(600, 'sine', 0.15);
+
+                // Transition screen to PIN
+                ATM_DATA.screenState = "PIN_ENTRY";
+                ATM_DATA.pinInput = "";
+                renderScreen();
+            } else {
+                ejectCard();
+            }
+        }
+
+        function ejectCard() {
+            const cardEl = document.getElementById('physical-card');
+            const cardBtn = document.getElementById('card-btn');
+            const ledCard = document.getElementById('led-card');
+
+            ATM_DATA.cardInserted = false;
+            ATM_DATA.authenticated = false;
+            ATM_DATA.pinInput = "";
+            ATM_DATA.inputBuffer = "";
+            cardEl.classList.remove('card-inserted');
+            cardBtn.innerText = "Insert Card";
+            cardBtn.classList.replace('bg-red-600', 'bg-emerald-600');
+            ledCard.classList.replace('led-blue', 'led-green');
+            atmAudio.playBeep(400, 'sine', 0.15);
+
+            ATM_DATA.screenState = "WELCOME";
+            renderScreen();
+        }
+
+        // PHYSICAL & VIRTUAL KEYPAD INPUT HANDLING
+        function pressKey(key) {
+            atmAudio.playBeep(900, 'sine', 0.05);
+
+            if (!ATM_DATA.cardInserted && ATM_DATA.screenState === "WELCOME") {
+                // Auto insert card if key pressed
+                toggleCardInsertion();
+                return;
+            }
+
+            if (key === 'CANCEL') {
+                ATM_DATA.inputBuffer = "";
+                ATM_DATA.pinInput = "";
+                if (ATM_DATA.authenticated) {
+                    setScreenState('MENU');
+                } else {
+                    ejectCard();
+                }
+                return;
+            }
+
+            if (key === 'CLEAR') {
+                if (ATM_DATA.screenState === 'PIN_ENTRY') {
+                    ATM_DATA.pinInput = "";
+                } else {
+                    ATM_DATA.inputBuffer = ATM_DATA.inputBuffer.slice(0, -1);
+                }
+                renderScreen();
+                return;
+            }
+
+            if (key === 'ENTER') {
+                handleEnterKey();
+                return;
+            }
+
+            // Numeric or Dot inputs
+            if (ATM_DATA.screenState === 'PIN_ENTRY') {
+                if (ATM_DATA.pinInput.length < 4 && !isNaN(key)) {
+                    ATM_DATA.pinInput += key;
+                    renderScreen();
+                    if (ATM_DATA.pinInput.length === 4) {
+                        handleEnterKey();
+                    }
+                }
+            } else if (['WITHDRAW', 'DEPOSIT', 'TRANSFER', 'PIN_CHANGE'].includes(ATM_DATA.screenState)) {
+                ATM_DATA.inputBuffer += key;
+                renderScreen();
+            }
+        }
+
+        // HANDLE ENTER BUTTON LOGIC ACCORDING TO SCREEN STATE
+        function handleEnterKey() {
+            if (ATM_DATA.screenState === 'PIN_ENTRY') {
+                if (ATM_DATA.pinInput === ATM_DATA.pin) {
+                    ATM_DATA.authenticated = true;
+                    atmAudio.playSuccess();
+                    setScreenState('MENU');
+                } else {
+                    atmAudio.playError();
+                    alert("Invalid PIN! Demo PIN is 1234.");
+                    ATM_DATA.pinInput = "";
+                    renderScreen();
+                }
+            } else if (ATM_DATA.screenState === 'DEPOSIT') {
+                confirmDeposit();
+            } else if (ATM_DATA.screenState === 'TRANSFER') {
+                confirmTransferStep();
+            } else if (ATM_DATA.screenState === 'PIN_CHANGE') {
+                confirmPinChange();
+            }
+        }
+
+        function setScreenState(state) {
+            ATM_DATA.screenState = state;
+            ATM_DATA.inputBuffer = "";
+            renderScreen();
+        }
+
+        function selectMenuOption(option) {
+            atmAudio.playBeep(800, 'sine', 0.05);
+            if (option === 'WITHDRAW') ATM_DATA.inputMode = 'WITHDRAW_PRESET';
+            if (option === 'TRANSFER') ATM_DATA.transferStep = 'ACCOUNT';
+            setScreenState(option);
+        }
+
+        function promptCustomWithdrawal() {
+            ATM_DATA.inputMode = 'WITHDRAW_CUSTOM';
+            ATM_DATA.inputBuffer = "";
+            renderScreen();
+        }
+
+        // PROCESS WITHDRAWAL
+        function processWithdrawal(amount) {
+            if (isNaN(amount) || amount <= 0) {
+                atmAudio.playError();
+                alert("Please enter a valid amount!");
+                return;
+            }
+
+            if (amount > ATM_DATA.balance) {
+                atmAudio.playError();
+                alert("Insufficient funds in account!");
+                return;
+            }
+
+            // Process Transaction
+            ATM_DATA.screenState = "PROCESSING";
+            renderScreen();
+
+            setTimeout(() => {
+                ATM_DATA.balance -= amount;
+                ATM_DATA.history.unshift({
+                    date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                    type: 'Withdrawal',
+                    amount: amount,
+                    balance: ATM_DATA.balance
+                });
+
+                ATM_DATA.lastTransaction = { type: 'CASH WITHDRAWAL', amount: amount };
+                ATM_DATA.successMsg = `Dispensed $${amount.toFixed(2)}. Please collect your cash.`;
+                
+                // Trigger Hardware Effects
+                dispenseCashAnimation();
+                printReceiptHardware(`WITHDRAWAL`, amount);
+                atmAudio.playSuccess();
+
+                setScreenState('SUCCESS');
+            }, 1500);
+        }
+
+        // PROCESS DEPOSIT
+        function confirmDeposit() {
+            const amount = parseFloat(ATM_DATA.inputBuffer);
+            if (isNaN(amount) || amount <= 0) {
+                atmAudio.playError();
+                alert("Please enter a valid deposit amount!");
+                return;
+            }
+
+            ATM_DATA.screenState = "PROCESSING";
+            renderScreen();
+
+            setTimeout(() => {
+                ATM_DATA.balance += amount;
+                ATM_DATA.history.unshift({
+                    date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                    type: 'Deposit',
+                    amount: amount,
+                    balance: ATM_DATA.balance
+                });
+
+                ATM_DATA.lastTransaction = { type: 'CASH DEPOSIT', amount: amount };
+                ATM_DATA.successMsg = `Successfully deposited $${amount.toFixed(2)}.`;
+                
+                printReceiptHardware(`DEPOSIT`, amount);
+                atmAudio.playSuccess();
+
+                setScreenState('SUCCESS');
+            }, 1500);
+        }
+
+        // PROCESS TRANSFER
+        function confirmTransferStep() {
+            if (ATM_DATA.transferStep === 'ACCOUNT') {
+                if (ATM_DATA.inputBuffer.length < 4) {
+                    alert("Enter a valid recipient account number!");
+                    return;
+                }
+                ATM_DATA.transferAccount = ATM_DATA.inputBuffer;
+                ATM_DATA.transferStep = 'AMOUNT';
+                ATM_DATA.inputBuffer = "";
+                renderScreen();
+            } else {
+                const amount = parseFloat(ATM_DATA.inputBuffer);
+                if (isNaN(amount) || amount <= 0 || amount > ATM_DATA.balance) {
+                    atmAudio.playError();
+                    alert("Invalid or insufficient balance for transfer!");
+                    return;
+                }
+
+                ATM_DATA.screenState = "PROCESSING";
+                renderScreen();
+
+                setTimeout(() => {
+                    ATM_DATA.balance -= amount;
+                    ATM_DATA.history.unshift({
+                        date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                        type: 'Transfer',
+                        amount: amount,
+                        balance: ATM_DATA.balance
+                    });
+
+                    ATM_DATA.lastTransaction = { type: `TRANSFER TO ${ATM_DATA.transferAccount}`, amount: amount };
+                    ATM_DATA.successMsg = `Transferred $${amount.toFixed(2)} to ${ATM_DATA.transferAccount}.`;
+                    
+                    printReceiptHardware(`TRANSFER`, amount);
+                    atmAudio.playSuccess();
+
+                    setScreenState('SUCCESS');
+                }, 1500);
+            }
+        }
+
+        // PIN CHANGE
+        function confirmPinChange() {
+            if (ATM_DATA.inputBuffer.length !== 4 || isNaN(ATM_DATA.inputBuffer)) {
+                atmAudio.playError();
+                alert("PIN must be exactly 4 digits!");
+                return;
+            }
+
+            ATM_DATA.pin = ATM_DATA.inputBuffer;
+            ATM_DATA.successMsg = "Your 4-digit PIN has been successfully updated!";
+            atmAudio.playSuccess();
+            setScreenState('SUCCESS');
+        }
+
+        // HARDWARE ANIMATIONS & RECEIPT GENERATION
+        function dispenseCashAnimation() {
+            const cashTray = document.getElementById('cash-tray');
+            const collectBtn = document.getElementById('collect-cash-btn');
+            const ledCash = document.getElementById('led-cash');
+            const label = document.getElementById('cash-slot-label');
+
+            cashTray.classList.remove('hidden');
+            cashTray.classList.add('animate-cash');
+            collectBtn.classList.remove('hidden');
+            ledCash.classList.replace('led-off', 'led-green');
+            label.innerText = "CASH READY";
+
+            atmAudio.playCashSound();
+        }
+
+        function collectCash() {
+            const cashTray = document.getElementById('cash-tray');
+            const collectBtn = document.getElementById('collect-cash-btn');
+            const ledCash = document.getElementById('led-cash');
+            const label = document.getElementById('cash-slot-label');
+
+            cashTray.classList.add('hidden');
+            collectBtn.classList.add('hidden');
+            ledCash.classList.replace('led-green', 'led-off');
+            label.innerText = "DISPENSER SEALED";
+            atmAudio.playBeep(700, 'sine', 0.1);
+        }
+
+        function printReceiptHardware(type, amount) {
+            const receiptPaper = document.getElementById('receipt-paper');
+            const details = document.getElementById('receipt-details');
+            const ledReceipt = document.getElementById('led-receipt');
+
+            const now = new Date();
+            details.innerHTML = `
+                <div>DATE: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
+                <div>TERMINAL: OIB-8092</div>
+                <div>ACCOUNT: •••• ${ATM_DATA.accountNumber.slice(-4)}</div>
+                <div>TYPE: ${type}</div>
+                <div>AMOUNT: $${amount.toFixed(2)}</div>
+                <div class="border-t border-dashed border-gray-400 my-1"></div>
+                <div class="font-bold">AVAIL BAL: $${ATM_DATA.balance.toFixed(2)}</div>
+            `;
+
+            receiptPaper.classList.remove('hidden');
+            ledReceipt.classList.replace('led-off', 'led-blue');
+            atmAudio.playBeep(300, 'sawtooth', 0.3);
+        }
+
+        function printCurrentBalanceReceipt() {
+            printReceiptHardware("BALANCE INQUIRY", 0.00);
+        }
+
+        function printStatementReceipt() {
+            printReceiptHardware("MINI STATEMENT", 0.00);
+        }
+
+        function takeReceipt() {
+            const receiptPaper = document.getElementById('receipt-paper');
+            const ledReceipt = document.getElementById('led-receipt');
+
+            receiptPaper.classList.add('hidden');
+            ledReceipt.classList.replace('led-blue', 'led-off');
+            atmAudio.playBeep(500, 'sine', 0.1);
+        }
+
+        // PHYSICAL KEYBOARD LISTENER
+        window.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') {
+                pressKey(e.key);
+            } else if (e.key === 'Enter') {
+                pressKey('ENTER');
+            } else if (e.key === 'Backspace') {
+                pressKey('CLEAR');
+            } else if (e.key === 'Escape') {
+                pressKey('CANCEL');
+            }
+        });
+
+        // Initialize Display
+        renderScreen();
+    </script>
+</body>
+</html>
